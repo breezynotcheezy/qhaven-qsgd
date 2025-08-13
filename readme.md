@@ -346,9 +346,9 @@ MIT © 2025
 
 ```bibtex
 @software{qsgd2025,
-  title={QSGD: Quantum Stochastic Gradient Descent},
-  author={Your Name},
+  title={qhaven-QSGD: Quantum Stochastic Gradient Descent},
+  author={cadengreen},
   year={2025},
-  url={https://github.com/YOUR_USERNAME/qsgd}
+  url={https://github.com/breezynotcheezy/qhaven-qsgd}
 }
 ```
