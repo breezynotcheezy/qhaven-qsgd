@@ -1,0 +1,73 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Environments
+.env
+.venv
+.qsgd-venv
+venv/
+ENV/
+env.bak/
+*.env
+*.venv
+
+# VSCode/IDE config
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Logs
+*.log
+
+# Test outputs
+*.out
+*.prof
+*.temp
+*.tmp
+
+# Misc
+*.bak
+*.orig
+*.rej
+
+# Qiskit
+devicetokens.json
+.qiskit
+
+# Ignore data, notebooks, runtime dumps, and generated images (not checked in)
+*.h5
+*.npz
+*.csv
+*.pkl
+*.db
+*.sqlite3
+*.dat
+*.cache
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.gif
+assets/
+
+# Python build
+build/
+dist/
+*.egg-info/
+
+# User/test files
+test_ibm_quantum_run.pyc
