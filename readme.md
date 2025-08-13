@@ -11,9 +11,9 @@ QSGD provides quantum and hybrid stochastic gradient descent algorithms for mach
 
 ## Features
 
-- Quantum-inspired SGD methods (no quantum hardware needed)
+- Quantum SGD methods
 - Modular oracles for user-defined loss and gradient calculation
-- Hybrid backends: run entirely classical, simulate quantum, or connect to quantum APIs
+- Hybrid backends: run entirely classical, simulate quantum, or connect to quantum APIs (qiskit, braket)
 - Command-line interface (CLI) for experiment scripting
 - Configurable logging and runtime settings
 
