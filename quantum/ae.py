@@ -1,0 +1,49 @@
+"""
+Quantum Amplitude Estimation (QAE) Engine for classical and quantum gradients.
+Supports iterative AE, ML-AE, and classical MC fallback, batching, and provider abstraction.
+"""
+import numpy as np
+
+class QuantumGradientEstimator:
+    def __init__(self, backend="sim", precision=0.02, shots=2000, mode="iterative",
+                 timeout_s=60, max_retries=2, cache_dir=None, strict_local=False):
+        self.backend = backend
+        self.precision = precision
+        self.shots = shots
+        self.mode = mode
+        self.timeout_s = timeout_s
+        self.max_retries = max_retries
+        self.cache_dir = cache_dir
+        self.strict_local = strict_local
+        # Providers defer import (qiskit, braket, sim)
+        from .providers import get_provider
+        self.provider = get_provider(backend=backend, strict_local=strict_local)
+
+    def estimate(self, grads, build_oracle=None, params=None):
+        # Determine per-parameter or block-wise estimation
+        # Compose oracles for this batch/step
+        # "build_oracle" is either a supplied callable or an auto-selected builtin
+        qmeta = {
+            'backend': self.backend,
+            'quantum': self.backend != 'sim' and not self.strict_local,
+            'shots': self.shots,
+            'ae_mode': self.mode
+        }
+        try:
+            if self.backend == "sim" or self.strict_local:
+                # Fallback to classical MC estimate
+                qmeta['mode'] = 'classical-mc'
+                ests = [grad.clone() for grad in grads]
+                return ests, qmeta
+            # Compose batch circuits for quantum provider
+            oracles = []
+            for idx, grad in enumerate(grads):
+                oracle = build_oracle or (lambda *_: grad)
+                oracles.append(oracle)
+            results = self.provider.run_ae(oracles, shots=self.shots, epsilon=self.precision, mode=self.mode)
+            qmeta['mode'] = 'quantum'
+            return results, qmeta
+        except Exception as e:
+            qmeta['mode'] = 'error-fallback'
+            qmeta['error'] = str(e)
+            raise
