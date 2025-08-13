@@ -43,7 +43,7 @@ class IBMProvider:
             estimator.options.default_shots = shots
             job = estimator.run([(qc, observable, [])])  # No sweep params for basic use case
             pub_result = job.result()[0]
-            estimate = pub_result.data.evs[0]
+            estimate = pub_result.data.evs  # support scalar output
             results.append(estimate)
         return results
 

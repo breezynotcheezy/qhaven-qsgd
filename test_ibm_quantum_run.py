@@ -4,13 +4,19 @@ import traceback
 
 
 def simple_oracle():
-    # Creates a 1-qubit circuit and returns Pauli Z observable
-    from qiskit import QuantumCircuit
+    # Create a circuit and observable matching the full backend qubit count.
+    from qiskit import QuantumCircuit, transpile
     from qiskit.quantum_info import SparsePauliOp
-    qc = QuantumCircuit(1)
-    qc.ry(1.5708, 0)  # pi/2 rotation
-    observable = SparsePauliOp.from_list([('Z', 1)])
-    return qc, observable
+    from qiskit_ibm_runtime import QiskitRuntimeService
+    service = QiskitRuntimeService()
+    backend = service.least_busy(operational=True, simulator=False)
+    num_qubits = backend.configuration().num_qubits
+    qc = QuantumCircuit(num_qubits)
+    qc.ry(1.5708, 0)  # Operate only on qubit 0, others untouched
+    label = 'Z' + 'I' * (num_qubits - 1)
+    observable = SparsePauliOp.from_list([(label, 1)])
+    transpiled_qc = transpile(qc, backend=backend)
+    return transpiled_qc, observable
 
 
 def main():
