@@ -1,4 +1,4 @@
-# QSGD: Quantum-Inspired Stochastic Gradient Descent
+# QSGD: Quantum Stochastic Gradient Descent
 
 ---
 
