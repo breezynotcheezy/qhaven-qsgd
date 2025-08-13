@@ -5,7 +5,7 @@
 
 ## Overview
 
-QSGD provides quantum and hybrid stochastic gradient descent algorithms for machine learning optimization. It works in a standard Python environment and does not require quantum hardware. The framework targets users who wish to integrate quantum-inspired techniques with their existing or new research and engineering workflows.
+QSGD provides quantum and hybrid stochastic gradient descent algorithms for machine learning optimization. It works in a standard Python environment requires quantum hardware outsourcing. The framework targets users who wish to integrate quantum-inspired techniques with their existing or new research and engineering workflows.
 
 ---
 
