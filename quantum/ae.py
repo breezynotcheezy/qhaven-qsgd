@@ -42,9 +42,14 @@ class QuantumGradientEstimator:
                 ests = [grad.clone() for grad in grads]
                 return ests, qmeta
             # Compose batch circuits for quantum provider
+            # If build_oracle is provided, create a zero-arg closure per grad
+            # Otherwise, pass through the grad directly
             oracles = []
             for idx, grad in enumerate(grads):
-                oracle = build_oracle or (lambda *_: grad)
+                if build_oracle is None:
+                    oracle = (lambda g=grad: g)
+                else:
+                    oracle = (lambda g=grad, i=idx: build_oracle(g, i))
                 oracles.append(oracle)
             results = self.provider.run_ae(oracles, shots=self.shots, epsilon=self.precision, mode=self.mode)
             qmeta['mode'] = 'quantum'
