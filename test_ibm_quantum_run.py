@@ -4,11 +4,13 @@ import traceback
 
 
 def simple_oracle():
-    # Creates a 1-qubit circuit with amplitude 0.5 for |1>
+    # Creates a 1-qubit circuit and returns Pauli Z observable
     from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
     qc = QuantumCircuit(1)
     qc.ry(1.5708, 0)  # pi/2 rotation
-    return qc, 0
+    observable = SparsePauliOp.from_list([('Z', 1)])
+    return qc, observable
 
 
 def main():
