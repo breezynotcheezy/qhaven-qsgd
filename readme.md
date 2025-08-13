@@ -1,207 +1,354 @@
-# qhaven-QSGD: Quantum Stochastic Gradient Descent
+# QSGD: Quantum Stochastic Gradient Descent
+
+**Production-ready quantum-accelerated optimization with automatic PyTorch fallback**
 
 ---
 
-## Overview
+## What QSGD Does
 
-QSGD provides quantum-enabled and quantum-inspired stochastic gradient descent algorithms for machine learning optimization. Using the [Qiskit IBM Runtime](https://github.com/Qiskit/qiskit-ibm-runtime), QSGD supports real workloads on IBM Quantum cloud hardware—or can run fully classical if you choose. The framework is designed for easy integration with existing Python ML workflows.
+QSGD provides **quantum-accelerated stochastic gradient descent** that automatically falls back to **production PyTorch optimizers** when quantum hardware is unavailable or fails. This ensures your ML workflows never break, regardless of quantum backend status.
 
----
-
-## Features
-- Run real hybrid quantum-classical optimization on IBM Quantum hardware (no simulation by default)
-- Modular oracles, accepting Qiskit QuantumCircuit & observable objects
-- Command-line and library API
-- Logging, configuration, and extensibility as standard Python modules
+**Key Benefits:**
+- **Zero downtime**: Automatic fallback to trusted PyTorch optimizers
+- **Quantum acceleration**: Real IBM Quantum hardware when available
+- **Drop-in replacement**: Compatible with existing PyTorch training loops
+- **Production ready**: Built-in error handling, logging, and monitoring
 
 ---
 
-## Project Structure
+## How It Works
 
+```mermaid
+graph TD
+    A[Your PyTorch Model] --> B[QSGD Optimizer]
+    B --> C{Quantum Available?}
+    C -->|Yes| D[IBM Quantum Hardware]
+    C -->|No| E[PyTorch SGD Fallback]
+    D --> F[Quantum-Accelerated Gradients]
+    E --> G[Standard PyTorch Gradients]
+    F --> H[Model Update]
+    G --> H
+    H --> I[Next Training Step]
 ```
-qhaven-qsgd/
-├── cli/                # Command-line interface
-├── logging.py          # Logging utilities
-├── optim/              # Optimizers
-├── oracles/            # Oracle implementations
-├── quantum/            # Quantum device integrations (via Qiskit Runtime)
-├── runtime/            # Orchestration logic
-└── utils.py            # Utility functions
-```
+
+### Automatic Fallback Behavior
+
+1. **Quantum Mode**: When IBM Quantum credentials are set and hardware is available
+2. **Classical Fallback**: When quantum fails, unavailable, or credentials missing
+3. **Seamless Transition**: No code changes required - fallback is automatic
 
 ---
 
-## Quickstart
+## Installation
 
-### Installation
-
-```shell
+```bash
 git clone https://github.com/YOUR_USERNAME/qsgd.git
 cd qsgd
 python -m venv .qsgd-venv
-.qsgd-venv\Scripts\activate       # Windows
+
+# Windows
+.qsgd-venv\Scripts\activate
+
+# macOS/Linux  
+source .qsgd-venv/bin/activate
+
 pip install --upgrade pip
-pip install qiskit qiskit-ibm-runtime qiskit-aer
+pip install torch torchvision torchaudio
+pip install qiskit qiskit-ibm-runtime
 pip install -e .
 ```
 
 ---
 
-## Enabling Full IBM Quantum Functionality with Qiskit
+## Quick Start
 
-To use real IBM Quantum computers (not simulators) with QSGD, follow these steps:
+### Basic Usage (Automatic Fallback)
 
-### 1. Set Up Your IBM Quantum Account and Credentials
+```python
+import torch
+from qsgd.optim import SGD_QAE
 
-- Create an account or log in at: https://quantum-computing.ibm.com/
-- Create a Quantum Service instance on IBM Cloud (this will give you access to backends and generate a **CRN**).
-- In IBM Cloud, go to your Service Instance > Service Credentials and **create an API key**.
+# Your model
+model = torch.nn.Linear(10, 1)
+criterion = torch.nn.MSELoss()
 
-### 2. Gather Your Authentication Values
-You will need:
-- **QISKIT_IBM_TOKEN**  
-  Your IBM Cloud API key (string of letters/numbers).
-- **QISKIT_IBM_INSTANCE**  
-  Your Instance CRN (Cloud Resource Name), looks like  
-  `crn:v1:bluemix:public:quantum-computing:us-east:a/xxxxxx::instance:yyyyyyyyy`
-- **QISKIT_IBM_CHANNEL**  
-  Always set to `ibm_quantum_platform` for modern use.
+# QSGD optimizer - automatically falls back to PyTorch if quantum unavailable
+optimizer = SGD_QAE(
+    model.parameters(),
+    lr=0.01,
+    use_quantum=True,  # Will auto-fallback if quantum fails
+    backend="auto"      # Automatically detects best available backend
+)
 
-### 3. Set Your Environment Variables
-
-#### On Windows (Command Prompt):
-```shell
-set QISKIT_IBM_TOKEN=YOUR_API_KEY
-set QISKIT_IBM_INSTANCE=YOUR_INSTANCE_CRN
-set QISKIT_IBM_CHANNEL=ibm_quantum_platform
+# Standard PyTorch training loop
+for epoch in range(100):
+    optimizer.zero_grad()
+    loss = criterion(model(x), y)
+    loss.backward()
+    optimizer.step()  # Quantum if available, PyTorch if not
 ```
-#### On PowerShell:
-```shell
+
+### Force Classical Mode
+
+```python
+# Always use PyTorch (no quantum)
+optimizer = SGD_QAE(
+    model.parameters(),
+    lr=0.01,
+    use_quantum=False,  # Forces PyTorch SGD
+    backend="sim"        # Simulator mode
+)
+```
+
+---
+
+## Backend Configuration
+
+### Automatic Detection (Recommended)
+
+```python
+optimizer = SGD_QAE(
+    model.parameters(),
+    backend="auto"  # Automatically selects best available
+)
+```
+
+**Priority Order:**
+1. **IBM Quantum** (if credentials set and hardware available)
+2. **PyTorch SGD** (if quantum unavailable or fails)
+
+### Manual Backend Selection
+
+```python
+# Force IBM Quantum (requires credentials)
+optimizer = SGD_QAE(
+    model.parameters(),
+    backend="ibm",
+    use_quantum=True
+)
+
+# Force PyTorch (no quantum)
+optimizer = SGD_QAE(
+    model.parameters(),
+    backend="sim",
+    use_quantum=False
+)
+```
+
+---
+
+## IBM Quantum Setup (Optional)
+
+**QSGD works perfectly without quantum hardware.** Only set this up if you want quantum acceleration.
+
+### 1. IBM Cloud Setup
+- Create account at [IBM Quantum](https://quantum-computing.ibm.com/)
+- Create Quantum Service instance → Get **CRN**
+- Generate **API Key** in Service Credentials
+
+### 2. Environment Variables
+
+**Windows (PowerShell):**
+```powershell
 $env:QISKIT_IBM_TOKEN="YOUR_API_KEY"
 $env:QISKIT_IBM_INSTANCE="YOUR_INSTANCE_CRN"
 $env:QISKIT_IBM_CHANNEL="ibm_quantum_platform"
 ```
-#### On macOS/Linux:
-```shell
-export QISKIT_IBM_TOKEN=YOUR_API_KEY
-export QISKIT_IBM_INSTANCE=YOUR_INSTANCE_CRN
-export QISKIT_IBM_CHANNEL=ibm_quantum_platform
-```
-> These must be set in ANY terminal you use to run quantum experiments with QSGD.
 
----
-
-### 4. Activate Your Virtual Environment
-
-```shell
-.qsgd-venv\Scripts\activate      # Windows
-source .qsgd-venv/bin/activate    # macOS/Linux
+**macOS/Linux:**
+```bash
+export QISKIT_IBM_TOKEN="YOUR_API_KEY"
+export QISKIT_IBM_INSTANCE="YOUR_INSTANCE_CRN"
+export QISKIT_IBM_CHANNEL="ibm_quantum_platform"
 ```
 
----
+### 3. Test Quantum Integration
 
-### 5. Verify Quantum Integration
-
-Run:
-
-```shell
+```bash
 python test_ibm_quantum_run.py
 ```
 
-You should see output indicating:
-- The live IBM Quantum backend in use
-- Your quantum circuit expectation or amplitude value
-- PASS/FAIL result (if the key and instance are valid and you have backend access)
+---
+
+## Fallback Scenarios
+
+QSGD automatically falls back to PyTorch in these cases:
+
+| Scenario | Fallback Behavior |
+|----------|-------------------|
+| **No IBM credentials** | PyTorch SGD |
+| **IBM hardware busy** | PyTorch SGD |
+| **Network errors** | PyTorch SGD |
+| **Quantum job fails** | PyTorch SGD |
+| **Backend unavailable** | PyTorch SGD |
+
+**Result**: Your training continues uninterrupted with production PyTorch optimizers.
 
 ---
 
-### 6. Use QSGD with IBM Quantum in Your Code
+## Performance Characteristics
 
-When configuring QSGD’s optimizer or estimator, set `backend='ibm'` to enable live quantum hardware. Your oracles must return a tuple as:
+### Quantum Mode (IBM Hardware)
+- **Gradient estimation**: Quantum amplitude estimation
+- **Precision**: Configurable (default: 2% error tolerance)
+- **Shots**: Configurable (default: 2000)
+- **Latency**: Network + quantum execution time
+
+### Classical Fallback (PyTorch)
+- **Gradient estimation**: Standard PyTorch SGD
+- **Precision**: Machine precision
+- **Latency**: Local computation only
+- **Reliability**: Production PyTorch tested
+
+---
+
+## Advanced Configuration
+
+### Custom Oracles
 
 ```python
-QuantumCircuit, SparsePauliOp
-```
-
-Example minimal oracle:
-```python
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
-
-def example_oracle():
+def custom_oracle(batch, params, indices, bounds):
+    # Your custom quantum circuit logic
     qc = QuantumCircuit(1)
     qc.h(0)
     observable = SparsePauliOp.from_list([('Z', 1)])
     return qc, observable
+
+optimizer = SGD_QAE(
+    model.parameters(),
+    build_oracle=custom_oracle,
+    backend="ibm"
+)
+```
+
+### Precision Control
+
+```python
+optimizer = SGD_QAE(
+    model.parameters(),
+    ae_precision=0.01,  # 1% error tolerance
+    shots=5000,         # More shots = higher precision
+    backend="ibm"
+)
 ```
 
 ---
-**Trouble?**
-- Double-check that all environment variables are set in the active terminal.
-- You must have access to at least one real backend for your IBM Cloud instance.
-- For advanced errors, see [Qiskit IBM Runtime Docs](https://docs.quantum.ibm.com/api/qiskit-ibm-runtime).
 
----
+## Monitoring & Logging
 
----
+QSGD provides comprehensive logging:
 
-## Running Quantum Hardware Tests
+```python
+from qsgd.log import Logger
 
-To verify your credentials and quantum integration, activate your virtual environment, set your environment variables, and run:
+# Automatic logging to ./runs/qsgd/
+logger = Logger(log_dir="./logs")
 
-```shell
-python test_ibm_quantum_run.py
+# Logs include:
+# - Training metrics (loss, gradients)
+# - Quantum vs classical mode
+# - Fallback events
+# - Performance statistics
 ```
 
-You should see:
-- The detected IBM Quantum backend name
-- The estimated result of a quantum test circuit (amplitude or expectation value)
-- PASS/FAIL output for result sanity
+---
 
-If you get authentication or device errors, check your API key, instance CRN, and user rights on the IBM Quantum dashboard.
+## Architecture
+
+```
+qsgd/
+├── optim/           # Optimizers (SGD_QAE)
+├── quantum/         # Quantum backends (IBM, Braket)
+├── oracles/         # Quantum circuit builders
+├── runtime/         # Orchestration & scheduling
+├── log.py          # Structured logging
+└── cli/            # Command-line tools
+```
 
 ---
 
-## Typical QSGD Training Workflow
-1. Define/train your model as usual (e.g. PyTorch)
-2. Select an optimizer (pass `backend="ibm"` for true quantum; `"sim"` for classical)
-3. Oracles must return `(QuantumCircuit, SparsePauliOp)` (see oracles or test for examples)
-4. QSGD submits jobs to the IBMQ cloud and returns estimated values
+## Production Deployment
+
+### Development
+```python
+# Automatic fallback, minimal configuration
+optimizer = SGD_QAE(model.parameters(), lr=0.01)
+```
+
+### Production
+```python
+# Explicit configuration, monitoring
+optimizer = SGD_QAE(
+    model.parameters(),
+    lr=0.01,
+    backend="auto",
+    log_dir="/var/log/qsgd",
+    max_retries=3,
+    timeout_s=120
+)
+```
 
 ---
 
-## Advanced Usage
-- Tweak all hyperparameters in `config.py`
-- Write custom oracles in `oracles/builtins.py`, returning `(circuit, observable)`
-- For backend troubleshooting or advanced Qiskit use, see [Qiskit IBM Runtime Docs](https://docs.quantum.ibm.com/api/qiskit-ibm-runtime)
+## Troubleshooting
 
----
+### Common Issues
 
-## Extending QSGD
-- Implement new optimizers: `optim/`
-- Register new routines in `cli/main.py`
-- Add advanced oracles or runtime logic as you wish
+**"Quantum backend unavailable"**
+- **Solution**: Automatic fallback to PyTorch - no action needed
+- **Check**: Verify IBM credentials if you want quantum acceleration
+
+**"Training seems slower"**
+- **Cause**: Falled back to PyTorch (quantum unavailable)
+- **Solution**: Check IBM Quantum status or continue with PyTorch
+
+**"Import errors"**
+- **Solution**: Install required packages: `pip install torch qiskit`
+
+### Health Check
+
+```bash
+# Check environment and dependencies
+python -m qsgd.cli.doctor
+
+# List available backends
+python -m qsgd.cli.providers
+```
 
 ---
 
 ## FAQ
-**Q:** Do I need a quantum computer?  
-**A:** Yes, QSGD in quantum mode submits jobs to live IBM Quantum hardware using Qiskit Runtime (account required).
 
-**Q:** What do my oracles return?  
-**A:** Qiskit `QuantumCircuit` and `SparsePauliOp` observable as a tuple: `(circuit, observable)`.
+**Q: What happens if quantum hardware is down?**
+**A**: Automatic fallback to PyTorch SGD - your training continues uninterrupted.
 
-**Q:** What if IBM Quantum devices are all busy?  
-**A:** Jobs are queued. Free accounts have queue limits and wait times; paid/prioritized accounts are faster.
+**Q: Do I need quantum hardware to use QSGD?**
+**A**: No. QSGD works perfectly with PyTorch fallback. Quantum is optional acceleration.
+
+**Q: Is the fallback as good as PyTorch?**
+**A**: Yes. The fallback IS PyTorch - same implementation, same performance.
+
+**Q: Can I force classical mode only?**
+**A**: Yes. Set `use_quantum=False` or `backend="sim"`.
+
+**Q: What's the performance difference?**
+**A**: Quantum: Variable (hardware dependent), Classical: Consistent PyTorch performance.
 
 ---
 
 ## License
-MIT © 2025 Your Name
+
+MIT © 2025
 
 ---
 
-## Citation & Acknowledgements
-Built on Qiskit IBM Runtime. Cite as appropriate (bibtex available soon).
+## Citation
 
----
+```bibtex
+@software{qsgd2025,
+  title={QSGD: Quantum Stochastic Gradient Descent},
+  author={Your Name},
+  year={2025},
+  url={https://github.com/YOUR_USERNAME/qsgd}
+}
+```

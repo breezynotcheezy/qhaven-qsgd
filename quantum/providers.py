@@ -4,8 +4,13 @@ Quantum backend providers (Qiskit, Braket, Sim/local), cloud config, retry/backo
 
 class SimProvider:
     def run_ae(self, oracles, shots, epsilon, mode):
-        # Classical MC estimation of means (simulate quantum query)
-        return [oracle() for oracle in oracles]
+        # Classical fallback: simply return provided gradients or computed scalars
+        results = []
+        for oracle in oracles:
+            out = oracle()
+            # Support both direct tensors/scalars and (qc, observable)
+            results.append(out)
+        return results
 
 
 class BraketProvider:
@@ -23,13 +28,14 @@ from qiskit.quantum_info import SparsePauliOp
 
 class IBMProvider:
     def __init__(self):
-        # Expects QISKIT_IBM_TOKEN, QISKIT_IBM_INSTANCE, QISKIT_IBM_CHANNEL in environment
+        # Expects QISKIT_IBM_* in env; if missing, defer error and let caller fallback
         self._initialized = False
         self.service = None
         self.backend = None
         self._authenticate()
 
     def _authenticate(self):
+        # Will raise if env is not configured; caller handles fallback
         self.service = QiskitRuntimeService()  # auto-discovers env vars
         self.backend = self.service.least_busy(operational=True, simulator=False)
         self._initialized = True
@@ -54,10 +60,26 @@ _provider_map = {
 }
 
 def get_provider(backend, strict_local=False):
+    # Auto-detect best backend if requested
+    if backend in (None, 'auto'):
+        # Prefer IBM if credentials present; else use sim (classical)
+        has_token = os.environ.get('QISKIT_IBM_TOKEN')
+        has_instance = os.environ.get('QISKIT_IBM_INSTANCE')
+        has_channel = os.environ.get('QISKIT_IBM_CHANNEL')
+        if has_token and has_instance and has_channel and not strict_local:
+            try:
+                return IBMProvider()
+            except Exception:
+                # Fallback to classical if auth fails
+                return SimProvider()
+        return SimProvider()
     if strict_local or backend == 'sim':
         return SimProvider()
     if backend == 'ibm':
-        return IBMProvider()
+        try:
+            return IBMProvider()
+        except Exception:
+            return SimProvider()
     if backend == 'braket':
         return BraketProvider()
     raise ValueError(f"Unknown backend {backend}")

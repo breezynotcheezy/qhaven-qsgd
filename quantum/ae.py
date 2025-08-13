@@ -5,7 +5,7 @@ Supports iterative AE, ML-AE, and classical MC fallback, batching, and provider 
 import numpy as np
 
 class QuantumGradientEstimator:
-    def __init__(self, backend="sim", precision=0.02, shots=2000, mode="iterative",
+    def __init__(self, backend="auto", precision=0.02, shots=2000, mode="iterative",
                  timeout_s=60, max_retries=2, cache_dir=None, strict_local=False):
         self.backend = backend
         self.precision = precision
@@ -25,14 +25,20 @@ class QuantumGradientEstimator:
         # "build_oracle" is either a supplied callable or an auto-selected builtin
         qmeta = {
             'backend': self.backend,
-            'quantum': self.backend != 'sim' and not self.strict_local,
+            'quantum': None,
             'shots': self.shots,
             'ae_mode': self.mode
         }
         try:
-            if self.backend == "sim" or self.strict_local:
-                # Fallback to classical MC estimate
+            # Decide execution path based on provider type
+            try:
+                from .providers import SimProvider
+                is_sim = isinstance(self.provider, SimProvider) or self.backend == 'sim' or self.strict_local
+            except Exception:
+                is_sim = self.backend == 'sim' or self.strict_local
+            if is_sim:
                 qmeta['mode'] = 'classical-mc'
+                qmeta['quantum'] = False
                 ests = [grad.clone() for grad in grads]
                 return ests, qmeta
             # Compose batch circuits for quantum provider
@@ -42,8 +48,10 @@ class QuantumGradientEstimator:
                 oracles.append(oracle)
             results = self.provider.run_ae(oracles, shots=self.shots, epsilon=self.precision, mode=self.mode)
             qmeta['mode'] = 'quantum'
+            qmeta['quantum'] = True
             return results, qmeta
         except Exception as e:
             qmeta['mode'] = 'error-fallback'
             qmeta['error'] = str(e)
+            qmeta['quantum'] = False
             raise

@@ -4,10 +4,10 @@ Quantum-accelerated SGD with QAE and graceful fallback, torch.optim API-compatib
 import torch
 from torch.optim.optimizer import Optimizer
 
-from qopt.quantum.ae import QuantumGradientEstimator
-from qopt.runtime.orchestrator import Scheduler
-from qopt.logging import Logger
-from qopt.oracles import builtins as oracles
+from quantum.ae import QuantumGradientEstimator
+from runtime.orchestrator import Scheduler
+from log import Logger
+from oracles import builtins as oracles
 
 class SGD_QAE(Optimizer):
     r"""
@@ -33,7 +33,7 @@ class SGD_QAE(Optimizer):
         build_oracle (callable): Custom oracle builder (optional)
     """
     def __init__(self, params, lr=1e-3, momentum=0.0, weight_decay=0.0, nesterov=False,
-                 use_quantum=True, backend="sim", ae_precision=0.02, shots=2000,
+                 use_quantum=True, backend="auto", ae_precision=0.02, shots=2000,
                  ae_mode="iterative", timeout_s=60, max_retries=2, cache_dir=None,
                  log_dir=None, strict_local=False, build_oracle=None, **kwargs):
         # Standard torch param formatting/checks
@@ -61,6 +61,15 @@ class SGD_QAE(Optimizer):
         )
         self.scheduler = Scheduler()
         self.logger = Logger(log_dir=log_dir)
+
+        # Backing PyTorch SGD optimizer for trusted classical updates
+        self._torch_sgd = torch.optim.SGD(
+            params,
+            lr=lr,
+            momentum=momentum,
+            weight_decay=weight_decay,
+            nesterov=nesterov,
+        )
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -95,29 +104,14 @@ class SGD_QAE(Optimizer):
             self.logger.log_fallback(qmeta)
             est_grads = grads
 
-        # SGD/Nesterov update (same as torch)
-        for group in self.param_groups:
-            momentum = group['momentum']
-            nesterov = group['nesterov']
-            weight_decay = group['weight_decay']
-            lr = group['lr']
-
-            for idx, p in enumerate(params_with_grad):
-                grad = est_grads[idx]
-                if weight_decay != 0:
-                    grad = grad.add(p.data, alpha=weight_decay)
-                if momentum != 0:
-                    param_state = self.state.setdefault(p, {})
-                    if 'momentum_buffer' not in param_state:
-                        buf = param_state['momentum_buffer'] = grad.clone()
-                    else:
-                        buf = param_state['momentum_buffer']
-                        buf.mul_(momentum).add_(grad)
-                    if nesterov:
-                        grad = grad.add(buf, alpha=momentum)
-                    else:
-                        grad = buf
-                p.data.add_(grad, alpha=-lr)
+        # Delegate the parameter update to a real torch.optim.SGD for correctness
+        # Set the current step gradients to the estimated ones, then step
+        for idx, p in enumerate(params_with_grad):
+            p.grad = est_grads[idx]
+        if closure is None:
+            self._torch_sgd.step()
+        else:
+            self._torch_sgd.step(closure)
 
         self.logger.log_step({
             'loss': loss.item() if loss is not None else None,
