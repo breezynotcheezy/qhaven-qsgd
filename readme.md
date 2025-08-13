@@ -1,4 +1,4 @@
-# QSGD: Quantum Stochastic Gradient Descent
+# qhaven-QSGD: Quantum Stochastic Gradient Descent
 
 ---
 
