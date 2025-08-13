@@ -5,6 +5,7 @@ import os
 import typer
 from quantum.providers import _provider_map, get_provider
 from quantum.cache import CircuitCache
+from optim import SGD_QAE
 cli = typer.Typer()
 
 @cli.command()
@@ -51,7 +52,20 @@ def cache_purge():
 @cli.command()
 def bench():
     """Placeholder: Run quick QAE or SGD benchmark test."""
-    print('Benchmark not implemented in CLI stub.')
+    try:
+        import torch
+        model = torch.nn.Linear(8, 1)
+        x = torch.randn(64, 8)
+        y = torch.randn(64, 1)
+        opt = SGD_QAE(model.parameters(), lr=0.01, backend='auto', use_quantum=True)
+        loss_fn = torch.nn.MSELoss()
+        opt.zero_grad()
+        loss = loss_fn(model(x), y)
+        loss.backward()
+        opt.step()
+        print('Bench step complete. mode=fallback?', getattr(opt, 'fallback', False))
+    except Exception as e:
+        print('Bench failed:', e)
 
 if __name__ == "__main__":
     cli()

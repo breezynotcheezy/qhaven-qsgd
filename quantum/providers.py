@@ -23,8 +23,6 @@ class BraketProvider:
 
 import os
 from typing import Callable, List
-from qiskit_ibm_runtime import QiskitRuntimeService, EstimatorV2 as Estimator
-from qiskit.quantum_info import SparsePauliOp
 
 class IBMProvider:
     def __init__(self):
@@ -36,6 +34,7 @@ class IBMProvider:
 
     def _authenticate(self):
         # Will raise if env is not configured; caller handles fallback
+        from qiskit_ibm_runtime import QiskitRuntimeService  # lazy import
         self.service = QiskitRuntimeService()  # auto-discovers env vars
         self.backend = self.service.least_busy(operational=True, simulator=False)
         self._initialized = True
@@ -43,6 +42,7 @@ class IBMProvider:
     def run_ae(self, oracles: List[Callable], shots: int, epsilon: float, mode: str):
         # Each oracle must return (QuantumCircuit, observable) for estimation
         results = []
+        from qiskit_ibm_runtime import EstimatorV2 as Estimator  # lazy import
         for oracle in oracles:
             qc, observable = oracle()
             estimator = Estimator(self.backend)

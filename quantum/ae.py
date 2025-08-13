@@ -36,7 +36,7 @@ class QuantumGradientEstimator:
                 is_sim = isinstance(self.provider, SimProvider) or self.backend == 'sim' or self.strict_local
             except Exception:
                 is_sim = self.backend == 'sim' or self.strict_local
-            if is_sim:
+            if is_sim or build_oracle is None:
                 qmeta['mode'] = 'classical-mc'
                 qmeta['quantum'] = False
                 ests = [grad.clone() for grad in grads]
