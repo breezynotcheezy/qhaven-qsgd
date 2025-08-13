@@ -47,28 +47,101 @@ pip install -e .
 
 ---
 
-## Setting Up Your IBM Quantum API Credentials
+## Enabling Full IBM Quantum Functionality with Qiskit
 
-To run real quantum jobs, create an IBM Quantum Platform/Cloud account and set up Qiskit Runtime authentication:
+To use real IBM Quantum computers (not simulators) with QSGD, follow these steps:
 
-1. [Sign up or log in to IBM Quantum Platform](https://quantum-computing.ibm.com/)
-2. Create a Quantum Service instance on IBM Cloud.
-3. Copy your API key ("IBM Cloud API Key") and your instance CRN (Cloud Resource Name).
-4. In your shell, set these environment variables (replace with your values):
+### 1. Set Up Your IBM Quantum Account and Credentials
 
+- Create an account or log in at: https://quantum-computing.ibm.com/
+- Create a Quantum Service instance on IBM Cloud (this will give you access to backends and generate a **CRN**).
+- In IBM Cloud, go to your Service Instance > Service Credentials and **create an API key**.
+
+### 2. Gather Your Authentication Values
+You will need:
+- **QISKIT_IBM_TOKEN**  
+  Your IBM Cloud API key (string of letters/numbers).
+- **QISKIT_IBM_INSTANCE**  
+  Your Instance CRN (Cloud Resource Name), looks like  
+  `crn:v1:bluemix:public:quantum-computing:us-east:a/xxxxxx::instance:yyyyyyyyy`
+- **QISKIT_IBM_CHANNEL**  
+  Always set to `ibm_quantum_platform` for modern use.
+
+### 3. Set Your Environment Variables
+
+#### On Windows (Command Prompt):
 ```shell
-set QISKIT_IBM_TOKEN=YOUR_IBM_CLOUD_API_KEY
+set QISKIT_IBM_TOKEN=YOUR_API_KEY
 set QISKIT_IBM_INSTANCE=YOUR_INSTANCE_CRN
 set QISKIT_IBM_CHANNEL=ibm_quantum_platform
 ```
-(Mac/Linux users: use `export` instead of `set`)
-
-**Note:** The CRN looks like: 
+#### On PowerShell:
+```shell
+$env:QISKIT_IBM_TOKEN="YOUR_API_KEY"
+$env:QISKIT_IBM_INSTANCE="YOUR_INSTANCE_CRN"
+$env:QISKIT_IBM_CHANNEL="ibm_quantum_platform"
 ```
-crn:v1:bluemix:public:quantum-computing:us-east:a/xxxxxx::instance:yyyyyyyyy
+#### On macOS/Linux:
+```shell
+export QISKIT_IBM_TOKEN=YOUR_API_KEY
+export QISKIT_IBM_INSTANCE=YOUR_INSTANCE_CRN
+export QISKIT_IBM_CHANNEL=ibm_quantum_platform
+```
+> These must be set in ANY terminal you use to run quantum experiments with QSGD.
+
+---
+
+### 4. Activate Your Virtual Environment
+
+```shell
+.qsgd-venv\Scripts\activate      # Windows
+source .qsgd-venv/bin/activate    # macOS/Linux
 ```
 
-You must run these commands in every new terminal session or add them to your shell profile for persistence.
+---
+
+### 5. Verify Quantum Integration
+
+Run:
+
+```shell
+python test_ibm_quantum_run.py
+```
+
+You should see output indicating:
+- The live IBM Quantum backend in use
+- Your quantum circuit expectation or amplitude value
+- PASS/FAIL result (if the key and instance are valid and you have backend access)
+
+---
+
+### 6. Use QSGD with IBM Quantum in Your Code
+
+When configuring QSGD’s optimizer or estimator, set `backend='ibm'` to enable live quantum hardware. Your oracles must return a tuple as:
+
+```python
+QuantumCircuit, SparsePauliOp
+```
+
+Example minimal oracle:
+```python
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp
+
+def example_oracle():
+    qc = QuantumCircuit(1)
+    qc.h(0)
+    observable = SparsePauliOp.from_list([('Z', 1)])
+    return qc, observable
+```
+
+---
+**Trouble?**
+- Double-check that all environment variables are set in the active terminal.
+- You must have access to at least one real backend for your IBM Cloud instance.
+- For advanced errors, see [Qiskit IBM Runtime Docs](https://docs.quantum.ibm.com/api/qiskit-ibm-runtime).
+
+---
 
 ---
 
