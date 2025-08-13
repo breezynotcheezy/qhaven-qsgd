@@ -1,6 +1,6 @@
 # QSGD: Quantum Stochastic Gradient Descent
 
-**Production-ready quantum-accelerated optimization with automatic PyTorch fallback**
+**Production-ready quantum-accelerated optimization**
 
 ---
 
@@ -34,8 +34,7 @@ graph TD
 ### Automatic Fallback Behavior
 
 1. **Quantum Mode**: When IBM Quantum credentials are set and hardware is available
-2. **Classical Fallback**: When quantum fails, unavailable, or credentials missing
-3. **Seamless Transition**: No code changes required - fallback is automatic
+2. **Classical Fallback**: When quantum fails, API limits reached, or credentials missing
 
 ---
 
@@ -114,8 +113,8 @@ optimizer = SGD_QAE(
 ```
 
 **Priority Order:**
-1. **IBM Quantum** (if credentials set and hardware available)
-2. **PyTorch SGD** (if quantum unavailable or fails)
+1. **IBM Quantum**
+2. **PyTorch SGD** 
 
 ### Manual Backend Selection
 
@@ -139,7 +138,7 @@ optimizer = SGD_QAE(
 
 ## IBM Quantum Setup (Optional)
 
-**QSGD works perfectly without quantum hardware.** Only set this up if you want quantum acceleration.
+**Only set up in research/testing environments**
 
 ### 1. IBM Cloud Setup
 - Create account at [IBM Quantum](https://quantum-computing.ibm.com/)
@@ -168,19 +167,6 @@ export QISKIT_IBM_CHANNEL="ibm_quantum_platform"
 python test_ibm_quantum_run.py
 ```
 
----
-
-## Fallback Scenarios
-
-QSGD automatically falls back to PyTorch in these cases:
-
-| Scenario | Fallback Behavior |
-|----------|-------------------|
-| **No IBM credentials** | PyTorch SGD |
-| **IBM hardware busy** | PyTorch SGD |
-| **Network errors** | PyTorch SGD |
-| **Quantum job fails** | PyTorch SGD |
-| **Backend unavailable** | PyTorch SGD |
 
 **Result**: Your training continues uninterrupted with production PyTorch optimizers.
 
@@ -317,28 +303,9 @@ python -m qsgd.cli.providers
 
 ---
 
-## FAQ
-
-**Q: What happens if quantum hardware is down?**
-**A**: Automatic fallback to PyTorch SGD - your training continues uninterrupted.
-
-**Q: Do I need quantum hardware to use QSGD?**
-**A**: No. QSGD works perfectly with PyTorch fallback. Quantum is optional acceleration.
-
-**Q: Is the fallback as good as PyTorch?**
-**A**: Yes. The fallback IS PyTorch - same implementation, same performance.
-
-**Q: Can I force classical mode only?**
-**A**: Yes. Set `use_quantum=False` or `backend="sim"`.
-
-**Q: What's the performance difference?**
-**A**: Quantum: Variable (hardware dependent), Classical: Consistent PyTorch performance.
-
----
-
 ## License
 
-MIT © 2025
+Apache 2.0 License
 
 ---
 
