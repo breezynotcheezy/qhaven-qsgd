@@ -136,7 +136,7 @@ optimizer = SGD_QAE(
 
 ---
 
-## IBM Quantum Setup (Optional)
+## IBM Quantum Setup
 
 **Only set up in research/testing environments**
 
